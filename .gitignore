@@ -1,0 +1,26 @@
+# Claude memory (local only)
+.claude/
+
+# Flutter/Dart
+spell_kit/.dart_tool/
+spell_kit/.flutter-plugins
+spell_kit/.flutter-plugins-dependencies
+spell_kit/build/
+spell_kit/.packages
+
+# Android
+spell_kit/android/.gradle/
+spell_kit/android/local.properties
+spell_kit/android/key.properties
+
+# iOS
+spell_kit/ios/Pods/
+spell_kit/ios/.symlinks/
+
+# macOS
+spell_kit/macos/Pods/
+spell_kit/macos/.symlinks/
+
+# General
+.DS_Store
+*.log
