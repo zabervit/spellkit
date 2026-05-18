@@ -9,6 +9,7 @@ class WordListModel extends HiveObject {
     required this.words,
     required this.createdAt,
     this.lastPracticedAt,
+    this.colorIndex = 0,
   });
 
   String id;
@@ -16,6 +17,7 @@ class WordListModel extends HiveObject {
   List<String> words;
   DateTime createdAt;
   DateTime? lastPracticedAt;
+  int colorIndex;
 
   factory WordListModel.fromEntity(WordList entity) => WordListModel(
         id: entity.id,
@@ -23,6 +25,7 @@ class WordListModel extends HiveObject {
         words: List<String>.from(entity.words),
         createdAt: entity.createdAt,
         lastPracticedAt: entity.lastPracticedAt,
+        colorIndex: entity.colorIndex,
       );
 
   WordList toEntity() => WordList(
@@ -31,6 +34,7 @@ class WordListModel extends HiveObject {
         words: List<String>.unmodifiable(words),
         createdAt: createdAt,
         lastPracticedAt: lastPracticedAt,
+        colorIndex: colorIndex,
       );
 }
 
@@ -40,14 +44,25 @@ class WordListModelAdapter extends TypeAdapter<WordListModel> {
 
   @override
   WordListModel read(BinaryReader reader) {
+    final id = reader.readString();
+    final name = reader.readString();
+    final words = reader.readStringList();
+    final createdAt = DateTime.fromMillisecondsSinceEpoch(reader.readInt());
+    final hasDate = reader.readBool();
+    final lastPracticedAt =
+        hasDate ? DateTime.fromMillisecondsSinceEpoch(reader.readInt()) : null;
+    // colorIndex was added after initial release — default to 0 for old records
+    int colorIndex = 0;
+    try {
+      colorIndex = reader.readInt();
+    } catch (_) {}
     return WordListModel(
-      id: reader.readString(),
-      name: reader.readString(),
-      words: reader.readStringList(),
-      createdAt: DateTime.fromMillisecondsSinceEpoch(reader.readInt()),
-      lastPracticedAt: reader.readBool()
-          ? DateTime.fromMillisecondsSinceEpoch(reader.readInt())
-          : null,
+      id: id,
+      name: name,
+      words: words,
+      createdAt: createdAt,
+      lastPracticedAt: lastPracticedAt,
+      colorIndex: colorIndex,
     );
   }
 
@@ -60,5 +75,6 @@ class WordListModelAdapter extends TypeAdapter<WordListModel> {
     final hasDate = obj.lastPracticedAt != null;
     writer.writeBool(hasDate);
     if (hasDate) writer.writeInt(obj.lastPracticedAt!.millisecondsSinceEpoch);
+    writer.writeInt(obj.colorIndex);
   }
 }

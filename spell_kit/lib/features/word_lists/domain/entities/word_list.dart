@@ -7,6 +7,7 @@ class WordList extends Equatable {
     required this.words,
     required this.createdAt,
     this.lastPracticedAt,
+    this.colorIndex = 0,
   });
 
   final String id;
@@ -14,11 +15,13 @@ class WordList extends Equatable {
   final List<String> words;
   final DateTime createdAt;
   final DateTime? lastPracticedAt;
+  final int colorIndex;
 
   WordList copyWith({
     String? name,
     List<String>? words,
     DateTime? lastPracticedAt,
+    int? colorIndex,
   }) =>
       WordList(
         id: id,
@@ -26,8 +29,9 @@ class WordList extends Equatable {
         words: words ?? this.words,
         createdAt: createdAt,
         lastPracticedAt: lastPracticedAt ?? this.lastPracticedAt,
+        colorIndex: colorIndex ?? this.colorIndex,
       );
 
   @override
-  List<Object?> get props => [id, name, words, createdAt, lastPracticedAt];
+  List<Object?> get props => [id, name, words, createdAt, lastPracticedAt, colorIndex];
 }

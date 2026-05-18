@@ -4,7 +4,7 @@ import '../../domain/entities/practice_state.dart';
 import '../../domain/entities/word_result.dart';
 import '../../domain/services/rule_based_hint_service.dart';
 
-const _maxAttempts = 3;
+const maxPracticeAttempts = 3;
 
 class PracticeArgs {
   const PracticeArgs(this.listId, this.words, this.difficulty);
@@ -28,23 +28,22 @@ class PracticeNotifier extends FamilyNotifier<PracticeState, PracticeArgs> {
         difficulty: arg.difficulty,
       );
 
+  // Returns true if correct, false if wrong.
+  // Does NOT advance currentIndex — call nextWord() after showing feedback.
   Future<bool> submitAnswer(String answer) async {
     final current = state.currentWord;
     final isCorrect = answer.toLowerCase() == current.toLowerCase();
     final newAttempts = state.attempts + 1;
 
-    if (isCorrect || newAttempts >= _maxAttempts) {
+    if (isCorrect || newAttempts >= maxPracticeAttempts) {
       final result = WordResult(
         word: current,
         attempts: newAttempts,
         correct: isCorrect,
       );
-      final newResults = [...state.results, result];
-      final nextIndex = state.currentIndex + 1;
       state = state.copyWith(
-        results: newResults,
+        results: [...state.results, result],
         attempts: 0,
-        currentIndex: state.isLastWord ? state.currentIndex : nextIndex,
         status: state.isLastWord
             ? PracticeStatus.sessionComplete
             : PracticeStatus.wordComplete,
@@ -56,9 +55,13 @@ class PracticeNotifier extends FamilyNotifier<PracticeState, PracticeArgs> {
     return false;
   }
 
+  // Advances to the next word. Call after celebrate/reveal animation.
   void nextWord() {
-    if (state.status == PracticeStatus.sessionComplete) return;
-    state = state.copyWith(status: PracticeStatus.inProgress);
+    if (state.status != PracticeStatus.wordComplete) return;
+    state = state.copyWith(
+      currentIndex: state.currentIndex + 1,
+      status: PracticeStatus.inProgress,
+    );
   }
 
   Future<String> getHint(String attempt) =>

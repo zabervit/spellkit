@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../providers/word_lists_providers.dart';
 import '../widgets/word_list_card.dart';
 
@@ -19,11 +20,15 @@ class WordListsScreen extends ConsumerWidget {
             : ListView.builder(
                 padding: const EdgeInsets.all(16),
                 itemCount: lists.length,
-                itemBuilder: (context, i) => WordListCard(list: lists[i]),
+                itemBuilder: (context, i) => WordListCard(
+                  list: lists[i],
+                  onDelete: () =>
+                      ref.read(wordListsProvider.notifier).delete(lists[i].id),
+                ),
               ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.of(context).pushNamed('/lists/add'),
+        onPressed: () => context.push('/lists/add'),
         child: const Icon(Icons.add),
       ),
     );

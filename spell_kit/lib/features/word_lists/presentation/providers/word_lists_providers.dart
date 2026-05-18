@@ -28,7 +28,9 @@ class WordListsNotifier extends AsyncNotifier<List<WordList>> {
       ref.read(wordListRepositoryProvider).getAll();
 
   Future<void> add(String name, List<String> words) async {
-    await ref.read(addWordListProvider).call(name, words);
+    final current = state.valueOrNull ?? [];
+    final colorIndex = current.length % 4;
+    await ref.read(addWordListProvider).call(name, words, colorIndex: colorIndex);
     ref.invalidateSelf();
   }
 

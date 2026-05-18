@@ -16,6 +16,7 @@ Future<void> main() async {
   await Future.wait([
     Hive.openBox<WordListModel>(HiveBoxes.wordLists),
     Hive.openBox<UserProfileModel>(HiveBoxes.userProfile),
+    Hive.openBox<dynamic>(HiveBoxes.settings),
   ]);
 
   runApp(const ProviderScope(child: SpellKitApp()));
