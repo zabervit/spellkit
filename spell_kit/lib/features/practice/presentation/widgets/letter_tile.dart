@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../../shared/presentation/theme/app_colors.dart';
 
 enum TileVariant { correct, decoy, slot }
@@ -26,7 +27,12 @@ class LetterTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: onTap == null
+          ? null
+          : () {
+              HapticFeedback.lightImpact();
+              onTap!();
+            },
       child: Container(
         width: _size,
         height: _size + 6,

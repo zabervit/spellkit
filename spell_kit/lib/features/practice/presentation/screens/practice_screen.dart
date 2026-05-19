@@ -55,6 +55,27 @@ class _PracticeScreenState extends ConsumerState<PracticeScreen> {
     context.go('/summary', extra: SummaryArgs(session, _args));
   }
 
+  Future<void> _confirmQuit(BuildContext context) async {
+    final quit = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Quit session?'),
+        content: const Text('Your progress will be lost.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Keep going'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Quit'),
+          ),
+        ],
+      ),
+    );
+    if ((quit ?? false) && context.mounted) context.go('/lists');
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(practiceNotifierProvider(_args));
@@ -76,35 +97,44 @@ class _PracticeScreenState extends ConsumerState<PracticeScreen> {
       return const Scaffold(body: SizedBox.shrink());
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('${state.currentIndex + 1} / ${state.words.length}'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.volume_up_rounded),
-            tooltip: 'Hear word',
-            onPressed: () => tts.speak(state.currentWord),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) => _confirmQuit(context),
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('${state.currentIndex + 1} / ${state.words.length}'),
+          leading: IconButton(
+            icon: const Icon(Icons.close),
+            tooltip: 'Quit session',
+            onPressed: () => _confirmQuit(context),
           ),
-          IconButton(
-            icon: const Icon(Icons.slow_motion_video),
-            tooltip: 'Slow',
-            onPressed: () => tts.slowSpeak(state.currentWord),
-          ),
-        ],
-      ),
-      body: widget.difficulty.level <= 3
-          ? TileModeWidget(
-              key: ValueKey(state.currentIndex),
-              args: _args,
-              word: state.currentWord,
-              tilePool: _buildTilePool(state.currentWord, widget.difficulty),
-            )
-          : TypeModeWidget(
-              key: ValueKey(state.currentIndex),
-              args: _args,
-              word: state.currentWord,
-              lengthHint: widget.difficulty.level == 4,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.volume_up_rounded),
+              tooltip: 'Hear word',
+              onPressed: () => tts.speak(state.currentWord),
             ),
+            IconButton(
+              icon: const Icon(Icons.slow_motion_video),
+              tooltip: 'Slow',
+              onPressed: () => tts.slowSpeak(state.currentWord),
+            ),
+          ],
+        ),
+        body: widget.difficulty.level <= 3
+            ? TileModeWidget(
+                key: ValueKey(state.currentIndex),
+                args: _args,
+                word: state.currentWord,
+                tilePool: _buildTilePool(state.currentWord, widget.difficulty),
+              )
+            : TypeModeWidget(
+                key: ValueKey(state.currentIndex),
+                args: _args,
+                word: state.currentWord,
+                lengthHint: widget.difficulty.level == 4,
+              ),
+      ),
     );
   }
 }

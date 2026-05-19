@@ -15,13 +15,18 @@ class ApplyXp {
     final today = DateTime(now.year, now.month, now.day);
 
     final lastDate = current.lastPracticeDate;
-    final wasYesterday = lastDate != null &&
-        DateTime(lastDate.year, lastDate.month, lastDate.day)
-            .difference(today)
-            .inDays ==
-            -1;
+    final practiceDay = lastDate != null
+        ? DateTime(lastDate.year, lastDate.month, lastDate.day)
+        : null;
+    final wasToday = practiceDay != null && practiceDay == today;
+    final wasYesterday =
+        practiceDay != null && practiceDay.difference(today).inDays == -1;
 
-    final newStreak = wasYesterday ? current.streak + 1 : 1;
+    final newStreak = wasToday
+        ? current.streak
+        : wasYesterday
+            ? current.streak + 1
+            : 1;
     final newXp = current.xp + xpGained;
     final newLevel = _levelThresholds.lastIndexWhere((t) => newXp >= t) + 1;
     final leveledUp = newLevel > current.level;
@@ -31,7 +36,8 @@ class ApplyXp {
       level: newLevel,
       streak: newStreak,
       lastPracticeDate: now,
-      todayWordCount: current.todayWordCount + wordCount,
+      todayWordCount:
+          wasToday ? current.todayWordCount + wordCount : wordCount,
     );
     await _repository.save(updated);
     return (profile: updated, leveledUp: leveledUp);

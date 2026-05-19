@@ -17,8 +17,27 @@ final profileProvider =
 
 class ProfileNotifier extends AsyncNotifier<UserProfile> {
   @override
-  Future<UserProfile> build() =>
-      ref.read(userProfileRepositoryProvider).get();
+  Future<UserProfile> build() async {
+    final repo = ref.read(userProfileRepositoryProvider);
+    final profile = await repo.get();
+
+    // Reset todayWordCount if the last practice was before today.
+    if (profile.todayWordCount > 0 && profile.lastPracticeDate != null) {
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final lastDay = DateTime(
+        profile.lastPracticeDate!.year,
+        profile.lastPracticeDate!.month,
+        profile.lastPracticeDate!.day,
+      );
+      if (lastDay != today) {
+        final reset = profile.copyWith(todayWordCount: 0);
+        await repo.save(reset);
+        return reset;
+      }
+    }
+    return profile;
+  }
 
   Future<bool> applySessionXp(int xpGained, int wordCount) async {
     final result =

@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../shared/presentation/theme/app_colors.dart';
+import '../../../../shared/services/audio_service.dart';
 import '../../domain/entities/practice_state.dart';
 import '../providers/practice_providers.dart';
 import 'letter_tile.dart';
@@ -38,6 +41,7 @@ class _TileModeWidgetState extends ConsumerState<TileModeWidget>
   bool _submitting = false;
   bool _celebrating = false;
   bool _revealing = false;
+  Completer<void>? _tapCompleter;
 
   @override
   void initState() {
@@ -60,6 +64,7 @@ class _TileModeWidgetState extends ConsumerState<TileModeWidget>
 
   @override
   void dispose() {
+    _tapCompleter?.complete();
     _shakeCtrl.dispose();
     super.dispose();
   }
@@ -96,13 +101,22 @@ class _TileModeWidgetState extends ConsumerState<TileModeWidget>
     final isCorrect = await notifier.submitAnswer(answer);
     if (!mounted) return;
 
+    final audio = ref.read(audioServiceProvider);
     if (isCorrect) {
+      HapticFeedback.mediumImpact();
+      audio.play(SoundEffect.correct);
+      _tapCompleter = Completer<void>();
       setState(() => _celebrating = true);
-      await Future.delayed(const Duration(milliseconds: 1100));
+      await Future.any([
+        Future.delayed(const Duration(milliseconds: 2500)),
+        _tapCompleter!.future,
+      ]);
+      _tapCompleter = null;
       if (!mounted) return;
       setState(() => _celebrating = false);
       notifier.nextWord();
     } else {
+      audio.play(SoundEffect.wrong);
       final status = ref.read(practiceNotifierProvider(widget.args)).status;
       if (status == PracticeStatus.wordComplete) {
         // wordComplete — max attempts reached, reveal the word
@@ -131,15 +145,25 @@ class _TileModeWidgetState extends ConsumerState<TileModeWidget>
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        Column(
-          children: [
-            const SizedBox(height: 24),
-            _buildSlots(),
-            const SizedBox(height: 32),
-            _buildPool(),
-          ],
+        Positioned.fill(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildSlots(),
+              const SizedBox(height: 36),
+              _buildPool(),
+            ],
+          ),
         ),
-        if (_celebrating) _CelebrateOverlay(word: widget.word),
+        if (_celebrating)
+          _CelebrateOverlay(
+            word: widget.word,
+            onTap: () {
+              if (_tapCompleter != null && !_tapCompleter!.isCompleted) {
+                _tapCompleter!.complete();
+              }
+            },
+          ),
         if (_revealing) _RevealOverlay(word: widget.word),
       ],
     );
@@ -190,31 +214,87 @@ class _TileModeWidgetState extends ConsumerState<TileModeWidget>
 }
 
 class _CelebrateOverlay extends StatelessWidget {
-  const _CelebrateOverlay({required this.word});
+  const _CelebrateOverlay({required this.word, required this.onTap});
   final String word;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return Positioned.fill(
-      child: IgnorePointer(
+      child: GestureDetector(
+        onTap: onTap,
         child: Container(
-          color: AppColors.mint.withValues(alpha: 0.85),
+          color: Colors.black.withValues(alpha: 0.45),
           child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('✓', style: TextStyle(fontSize: 72, color: Colors.white)),
-                const SizedBox(height: 8),
-                Text(
-                  word.toUpperCase(),
-                  style: const TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                    letterSpacing: 4,
-                  ),
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.72, end: 1.0),
+              duration: const Duration(milliseconds: 420),
+              curve: Curves.elasticOut,
+              builder: (context, scale, child) =>
+                  Transform.scale(scale: scale, child: child),
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 36),
+                padding: const EdgeInsets.fromLTRB(28, 36, 28, 24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(28),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 32,
+                      offset: const Offset(0, 12),
+                    ),
+                  ],
                 ),
-              ],
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 76,
+                      height: 76,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFE8F5E9),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.check_rounded,
+                        color: Color(0xFF2E7D32),
+                        size: 46,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Correct!',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF2E7D32),
+                        letterSpacing: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      word.toUpperCase(),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 36,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF1A237E),
+                        letterSpacing: 6,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Tap to continue',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade400,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ),

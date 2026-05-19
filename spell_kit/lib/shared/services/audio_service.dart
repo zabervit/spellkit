@@ -1,4 +1,5 @@
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 enum SoundEffect { correct, wrong, levelUp }
 
@@ -11,8 +12,18 @@ class AudioService {
       SoundEffect.wrong => 'sounds/wrong.mp3',
       SoundEffect.levelUp => 'sounds/level_up.mp3',
     };
-    await _player.play(AssetSource(path));
+    try {
+      await _player.play(AssetSource(path));
+    } catch (_) {
+      // Sound file missing — silently skip.
+    }
   }
 
   void dispose() => _player.dispose();
 }
+
+final audioServiceProvider = Provider<AudioService>((ref) {
+  final service = AudioService();
+  ref.onDispose(service.dispose);
+  return service;
+});

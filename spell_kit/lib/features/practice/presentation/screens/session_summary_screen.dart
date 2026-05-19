@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../shared/services/audio_service.dart';
 import '../../../profile/presentation/providers/profile_providers.dart';
 import '../../domain/entities/practice_session.dart';
 import '../providers/practice_providers.dart';
@@ -66,6 +67,7 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen>
     if (!mounted) return;
 
     if (leveledUp) {
+      ref.read(audioServiceProvider).play(SoundEffect.levelUp);
       setState(() => _showLevelUp = true);
       _levelUpCtrl.forward();
       await Future.delayed(const Duration(milliseconds: 2200));
